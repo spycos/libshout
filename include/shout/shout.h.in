@@ -41,12 +41,21 @@
 
 #define SHOUT_FORMAT_OGG	(0)
 #define SHOUT_FORMAT_MP3	(1)
+#define SHOUT_FORMAT_AAC  (2)
+
 /* backward-compatibility alias */
 #define SHOUT_FORMAT_VORBIS	SHOUT_FORMAT_OGG
 
 #define SHOUT_PROTOCOL_HTTP		(0)
 #define SHOUT_PROTOCOL_XAUDIOCAST	(1)
 #define SHOUT_PROTOCOL_ICY		(2)
+
+#define SHOUT_OGG_AUDIO_MIME    "audio/ogg"
+#define SHOUT_OGG_VIDEO_MIME    "video/ogg"
+#define SHOUT_OGG_MIME          "application/ogg"
+#define SHOUT_MP3_MIME          "audio/mpeg"
+#define SHOUT_AAC_MIME          "audio/aac"
+#define SHOUT_AACP_MIME         "audio./aacp"
 
 #define SHOUT_AI_BITRATE	"bitrate"
 #define SHOUT_AI_SAMPLERATE	"samplerate"
@@ -91,6 +100,9 @@ int shout_get_connected(shout_t *self);
 /* Parameter manipulation functions.  libshout makes copies of all parameters,
  * the caller may free its copies after giving them to libshout.  May return
  * SHOUTERR_MALLOC */
+
+int shout_set_mime(shout_t *self, const char *mime);
+const char *shout_get_mime(shout_t *self);
 
 int shout_set_host(shout_t *self, const char *host);
 const char *shout_get_host(shout_t *self);

@@ -65,6 +65,8 @@ struct shout {
 	unsigned int protocol;
 	/* type of data being sent */
 	unsigned int format;
+	/* Mime type for data */
+	char *mime;
 	/* audio encoding parameters */
 	util_dict *audio_info;
 

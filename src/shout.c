@@ -112,6 +112,11 @@ shout_t *shout_new(void)
 
 		return NULL;
 	}
+	if (shout_set_format(self, LIBSHOUT_DEFAULT_FORMAT) != SHOUTERR_SUCCESS) {
+		shout_free(self);
+
+		return NULL;
+	}
 
 	self->port = LIBSHOUT_DEFAULT_PORT;
 	self->format = LIBSHOUT_DEFAULT_FORMAT;
@@ -134,6 +139,7 @@ void shout_free(shout_t *self)
 	if (self->user) free(self->user);
 	if (self->useragent) free(self->useragent);
 	if (self->audio_info) _shout_util_dict_free (self->audio_info);
+	if (self->mime) free(self->mime);
 
 	free(self);
 }
@@ -147,7 +153,7 @@ int shout_open(shout_t *self)
 		return SHOUTERR_CONNECTED;
 	if (!self->host || !self->password || !self->port)
 		return self->error = SHOUTERR_INSANE;
-	if (self->format == SHOUT_FORMAT_OGG && self->protocol != SHOUT_PROTOCOL_HTTP)
+	if (self->format != SHOUT_FORMAT_OGG && self->protocol != SHOUT_PROTOCOL_HTTP)
 		return self->error = SHOUTERR_UNSUPPORTED;
 
 	return self->error = try_connect(self);
@@ -710,6 +716,33 @@ unsigned int shout_get_public(shout_t *self)
 	return self->public;
 }
 
+ 
+int shout_set_mime(shout_t *self, const char *mime)
+{
+	if (!self)
+		return SHOUTERR_INSANE;
+
+	if (self->state != SHOUT_STATE_UNCONNECTED)
+		return SHOUTERR_CONNECTED;
+
+	if (self->mime)
+		free(self->mime);
+
+	if (! (self->mime = _shout_util_strdup (mime)))
+		return self->error = SHOUTERR_MALLOC;
+
+	return self->error = SHOUTERR_SUCCESS;
+}
+
+const char *shout_get_mime(shout_t *self)
+{
+	if (!self)
+		return NULL;
+
+	return self->mime;
+}
+
+
 int shout_set_format(shout_t *self, unsigned int format)
 {
 	if (!self)
@@ -718,11 +751,20 @@ int shout_set_format(shout_t *self, unsigned int format)
 	if (self->state != SHOUT_STATE_UNCONNECTED)
 		return self->error = SHOUTERR_CONNECTED;
 
-	if (format != SHOUT_FORMAT_OGG && format != SHOUT_FORMAT_MP3)
+	if (format != SHOUT_FORMAT_OGG && format != SHOUT_FORMAT_MP3 && format != SHOUT_FORMAT_AAC)
 		return self->error = SHOUTERR_UNSUPPORTED;
 
 	self->format = format;
 
+	/* Set decent value for mime. */
+	switch (format) {
+		case SHOUT_FORMAT_OGG:
+			return shout_set_mime(self,SHOUT_OGG_MIME);
+		case SHOUT_FORMAT_AAC:
+			return shout_set_mime(self,SHOUT_AAC_MIME);
+		case SHOUT_FORMAT_MP3:
+			return shout_set_mime(self,SHOUT_MP3_MIME);
+  }
 	return self->error = SHOUTERR_SUCCESS;
 }
 
@@ -987,7 +1029,7 @@ static int try_connect (shout_t *self)
 		if (self->format == SHOUT_FORMAT_OGG) {
 			if ((rc = self->error = shout_open_ogg(self)) != SHOUTERR_SUCCESS)
                                 goto failure;
-		} else if (self->format == SHOUT_FORMAT_MP3) {
+		} else if (self->format == SHOUT_FORMAT_MP3 || self->format == SHOUT_FORMAT_AAC) {
 			if ((rc = self->error = shout_open_mp3(self)) != SHOUTERR_SUCCESS)
                                 goto failure;
 		} else {
@@ -1116,9 +1158,7 @@ static int create_http_request(shout_t *self)
 		}
 		if (self->useragent && queue_printf(self, "User-Agent: %s\r\n", self->useragent))
 			break;
-		if (self->format == SHOUT_FORMAT_OGG && queue_printf(self, "Content-Type: application/ogg\r\n"))
-			break;
-		if (self->format == SHOUT_FORMAT_MP3 && queue_printf(self, "Content-Type: audio/mpeg\r\n"))
+		if (self->mime && queue_printf(self, "Content-Type: %s\r\n", self->mime))
 			break;
 		if (queue_printf(self, "ice-name: %s\r\n", self->name ? self->name : "no name"))
 			break;
@@ -1294,8 +1334,10 @@ static int create_icy_request(shout_t *self)
 			break;
 		if (queue_printf(self, "icy-genre:%s\n", self->genre ? self->genre : "icecast"))
 			break;
-		if (queue_printf(self, "icy-br:%s\n\n", bitrate))
+		if (queue_printf(self, "icy-br:%s\n", bitrate))
 			break;
+		if (self->mime && queue_printf(self, "content-type:%s\n\n", self->mime))
+			break;		
 
 		ret = SHOUTERR_SUCCESS;
 	} while (0);

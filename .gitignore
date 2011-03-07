@@ -1,4 +1,6 @@
 build/
+.deps
+.libs
 *.o
 *.obj
 *.so
@@ -7,3 +9,17 @@ build/
 *.out
 *.swp
 .DS_Store
+*.lo
+*.la
+Makefile
+shout-config
+libtool
+stamp-h1
+shout.pc
+examples/example
+examples/nonblocking
+include/shout/shout.h
+config.h
+config.log
+config.status
+
