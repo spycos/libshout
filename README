@@ -1,3 +1,12 @@
+This fork of libshout 2.2.2 adds support for specifying arbitrary MIME types via shout_set_mime().
+
+This makes it possible to send AAC-encoded audio using a MIME type of "audio/aac" and shout_send_raw().
+
+Based on the patch by Randy: http://djlab.com/2010/05/arbitrary-mime-support-for-aacplus-streaming-with-libshout-and-perl-bindings/
+
+Queries: developers@mixlr.com
+
+
 libshout
 --------
 
